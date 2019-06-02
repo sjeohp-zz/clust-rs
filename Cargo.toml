@@ -1,0 +1,11 @@
+[package]
+name = "clust-rs"
+version = "0.1.0"
+authors = ["Joseph Mark <sjeohp@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+kdtree = "0.5"  
+itertools = "0.8"
+ndarray = "0.12"
+num-traits = "0.2"
