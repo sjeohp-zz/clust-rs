@@ -5,6 +5,7 @@ authors = ["Joseph Mark <sjeohp@gmail.com>"]
 edition = "2018"
 license = "Unlicense"
 repository = "https://github.com/sjeohp/clust-rs.git"
+description = "Data clustering"
 
 [dependencies]
 kdtree = "0.5"  
