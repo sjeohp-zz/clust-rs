@@ -7,9 +7,9 @@ use num_traits::identities::{One, Zero};
 
 #[derive(Debug)]
 pub struct Dbscan<T: Float + One + Zero> {
-    eps: T,
-    min_points: usize,
-    clusters: Vec<Option<usize>>,
+    pub eps: T,
+    pub min_points: usize,
+    pub clusters: Vec<Option<usize>>,
 }
 
 impl<T: Float + One + Zero> Dbscan<T> {
