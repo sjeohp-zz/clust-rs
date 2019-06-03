@@ -4,6 +4,8 @@ use kdtree::KdTree;
 use ndarray::prelude::*;
 use num_traits::float::Float;
 use num_traits::identities::{One, Zero};
+use rand::prelude::thread_rng;
+use rand::seq::index::sample;
 
 #[derive(Debug)]
 pub struct Dbscan<T: Float + One + Zero> {
@@ -21,7 +23,9 @@ impl<T: Float + One + Zero> Dbscan<T> {
         let mut clusters = vec![None; data.rows()];
         let kdt = kdtree_init(&data);
 
-        for (row_idx, row) in data.outer_iter().enumerate() {
+        let indices = sample(&mut thread_rng(), data.rows(), data.rows());
+        for row_idx in indices.iter() {
+            let row = data.row(row_idx);
             if !visited[row_idx] {
                 visited[row_idx] = true;
 
@@ -71,7 +75,7 @@ impl<T: Float + One + Zero> Dbscan<T> {
             .map(|row| {
                 neighbours.clear();
                 region_query(row.as_slice().unwrap(), self.eps, &kdt, &mut neighbours);
-                let mut neighbour_clusters = neighbours.iter().map(|idx| self.clusters[*idx]).unique().collect::<Vec<Option<usize>>>();
+                let neighbour_clusters = neighbours.iter().map(|idx| self.clusters[*idx]).unique().collect::<Vec<Option<usize>>>();
                 if neighbours.len() >= self.min_points - 1 {
                     ClusterPrediction::Core(neighbour_clusters)
                 } else if neighbour_clusters.iter().any(|c| c.is_some()) {
@@ -87,7 +91,7 @@ impl<T: Float + One + Zero> Dbscan<T> {
 fn kdtree_init<'a, T: Float + One + Zero>(data: &'a Array2<T>) -> KdTree<T, usize, &'a [T]> {
     let mut kdt = KdTree::new(data.cols());
     for (idx, row) in data.outer_iter().enumerate() {
-        kdt.add(row.into_slice().unwrap(), idx);
+        kdt.add(row.into_slice().unwrap(), idx).unwrap();
     }
     kdt
 }
@@ -112,19 +116,22 @@ mod tests {
     #[test]
     fn test_clusters() {
         let data = Array2::from_shape_vec((8, 2), vec![1.0, 2.0, 1.1, 2.2, 0.9, 1.9, 1.0, 2.1, -2.0, 3.0, -2.2, 3.1, -1.0, -2.0, -2.0, -1.0]).unwrap();
-        let mut model = Dbscan::new(&data, 0.5, 2, false);
+        let model = Dbscan::new(&data, 0.5, 2, false);
         let clustering = dbg!(model.clusters);
-        assert!(clustering.iter().take(4).all(|x| *x == Some(0)));
-        assert!(clustering.iter().skip(4).take(2).all(|x| *x == Some(1)));
-        assert!(clustering.iter().skip(6).all(|x| *x == None));
+        assert!(clustering.iter().take(4).all_equal());
+        assert!(clustering.iter().skip(4).take(2).all_equal());
+        assert!(clustering.iter().skip(6).all_equal());
+        assert!(clustering[0] != clustering[4]);
+        assert!(clustering[4] != clustering[6]);
+        assert!(clustering[6] != clustering[0]);
     }
 
     #[test]
     fn test_border_points() {
         let data = Array2::from_shape_vec((5, 1), vec![1.55, 2.0, 2.1, 2.2, 2.65]).unwrap();
 
-        let mut with = Dbscan::new(&data, 0.5, 3, true);
-        let mut without = Dbscan::new(&data, 0.5, 3, false);
+        let with = Dbscan::new(&data, 0.5, 3, true);
+        let without = Dbscan::new(&data, 0.5, 3, false);
         let with_borders_clustering = dbg!(with.clusters);
         let without_borders_clustering = dbg!(without.clusters);
         assert!(with_borders_clustering.iter().all(|x| *x == Some(0)));
@@ -136,13 +143,13 @@ mod tests {
     #[test]
     fn test_prediction() {
         let data = Array2::from_shape_vec((6, 2), vec![1.0, 2.0, 1.1, 2.2, 0.9, 1.9, 1.0, 2.1, -2.0, 3.0, -2.2, 3.1]).unwrap();
-        let mut model = Dbscan::new(&data, 0.5, 2, false);
+        let model = Dbscan::new(&data, 0.5, 2, false);
 
         let new_data = Array2::from_shape_vec((2, 2), vec![1.0, 2.0, 4.0, 4.0]).unwrap();
-        let classes = model.predict(&data, &new_data);
+        let classes = dbg!(model.predict(&data, &new_data));
 
         if let ClusterPrediction::Core(c0) = classes.get(0).unwrap() {
-            assert!(c0.iter().any(|c| *c == Some(0)));
+            assert!(c0.iter().any(|c| *c == model.clusters[0]));
         } else {
             panic!("{:?}", classes[0]);
         }
