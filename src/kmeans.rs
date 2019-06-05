@@ -11,9 +11,9 @@ use std::ops::AddAssign;
 
 #[derive(Debug)]
 pub struct Kmeans<T: Float + One + Zero + ScalarOperand + AddAssign + Copy + Sum> {
-    centers: Vec<Array1<T>>,
-    clusters: Vec<usize>,
-    withinss: Vec<T>,
+    pub centers: Vec<Array1<T>>,
+    pub clusters: Vec<usize>,
+    pub withinss: Vec<T>,
 }
 
 impl<T: Float + One + Zero + ScalarOperand + AddAssign + Copy + Sum> Kmeans<T> {
