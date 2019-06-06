@@ -6,6 +6,7 @@ use num_traits::identities::{One, Zero};
 use rand::prelude::thread_rng;
 use rand::prelude::IteratorRandom;
 use rand::seq::index::sample;
+use std::f32;
 use std::iter::Sum;
 use std::ops::AddAssign;
 
@@ -34,7 +35,8 @@ impl<T: Float + One + Zero + ScalarOperand + AddAssign + Copy + Sum> Kmeans<T> {
                             .iter()
                             .enumerate()
                             .map(|(i, center)| (i, ((&row - center) * (&row - center)).sum()))
-                            .min_by(|(_, a), (_, b)| a.partial_cmp(&b).expect("distance from center is not NAN"))
+                            .map(|(i, x)| if x.is_nan() { (i, T::from(f32::MAX).expect("T::from(f32::MAX)")) } else { (i, x) })
+                            .min_by(|(_, a), (_, b)| a.partial_cmp(&b).expect("PartialOrd distance from center"))
                             .expect("min distance from center");
                         clusters[row_idx] = cluster;
                         sums[cluster] = &sums[cluster] + &row;
