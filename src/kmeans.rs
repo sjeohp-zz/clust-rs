@@ -66,8 +66,9 @@ impl<T: Float + One + Zero + ScalarOperand + AddAssign + Copy + Sum> Kmeans<T> {
                     .iter()
                     .enumerate()
                     .map(|(i, center)| (i, ((&row - center) * (&row - center)).sum()))
-                    .min_by(|(_, a), (_, b)| a.partial_cmp(&b).unwrap())
-                    .unwrap()
+                    .map(|(i, x)| if x.is_nan() { (i, T::from(f32::MAX).expect("T::from(f32::MAX)")) } else { (i, x) })
+                    .min_by(|(_, a), (_, b)| a.partial_cmp(&b).expect("PartialOrd distance from center"))
+                    .expect("min distance from center")
                     .0
             })
             .collect::<Vec<usize>>()
