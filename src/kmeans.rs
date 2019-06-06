@@ -34,14 +34,18 @@ impl<T: Float + One + Zero + ScalarOperand + AddAssign + Copy + Sum> Kmeans<T> {
                             .iter()
                             .enumerate()
                             .map(|(i, center)| (i, ((&row - center) * (&row - center)).sum()))
-                            .min_by(|(_, a), (_, b)| a.partial_cmp(&b).unwrap())
-                            .unwrap();
+                            .min_by(|(_, a), (_, b)| a.partial_cmp(&b).expect("distance from center is not NAN"))
+                            .expect("min distance from center");
                         clusters[row_idx] = cluster;
                         sums[cluster] = &sums[cluster] + &row;
                         counts[cluster] += 1;
                         withinss[cluster] += distance;
                     }
-                    centers = sums.into_iter().zip(counts.into_iter()).map(|(sum, count)| sum / T::from(count).unwrap()).collect::<Vec<Array1<T>>>();
+                    centers = sums
+                        .into_iter()
+                        .zip(counts.into_iter())
+                        .map(|(sum, count)| sum / T::from(count).expect("T::from(usize)"))
+                        .collect::<Vec<Array1<T>>>();
                 }
                 Kmeans {
                     centers: centers,
@@ -49,8 +53,8 @@ impl<T: Float + One + Zero + ScalarOperand + AddAssign + Copy + Sum> Kmeans<T> {
                     withinss: withinss,
                 }
             })
-            .min_by(|a, b| a.withinss.iter().cloned().sum::<T>().partial_cmp(&b.withinss.iter().cloned().sum::<T>()).unwrap())
-            .unwrap()
+            .min_by(|a, b| a.withinss.iter().cloned().sum::<T>().partial_cmp(&b.withinss.iter().cloned().sum::<T>()).expect("withinss is not NAN"))
+            .expect("min withinss")
     }
 
     pub fn predict(&self, data: &Array2<T>) -> Vec<usize> {
