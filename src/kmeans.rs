@@ -19,7 +19,6 @@ pub struct Kmeans<T: Float + One + Zero + ScalarOperand + AddAssign + Copy + Sum
 
 impl<T: Float + One + Zero + ScalarOperand + AddAssign + Copy + Sum> Kmeans<T> {
     pub fn new(data: &Array2<T>, nclust: usize, iterations: usize, nseeds: usize) -> Kmeans<T> {
-        assert!(nseeds > nclust);
         let mut rng = thread_rng();
         (0..nseeds)
             .map(|_| {
