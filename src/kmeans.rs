@@ -59,19 +59,18 @@ impl<T: Float + One + Zero + ScalarOperand + AddAssign + Copy + Sum> Kmeans<T> {
     }
 
     pub fn predict(&self, data: &Array2<T>) -> Vec<usize> {
-        data.outer_iter()
+        data.outer_iter().map(|row| Self::predict_with_centers(&self.centers, &row)).collect::<Vec<usize>>()
+    }
+
+    pub fn predict_with_centers(centers: &[Array1<T>], row: &ArrayView1<T>) -> usize {
+        centers
+            .iter()
             .enumerate()
-            .map(|(row_idx, row)| {
-                self.centers
-                    .iter()
-                    .enumerate()
-                    .map(|(i, center)| (i, ((&row - center) * (&row - center)).sum()))
-                    .map(|(i, x)| if x.is_nan() { (i, T::from(f32::MAX).expect("T::from(f32::MAX)")) } else { (i, x) })
-                    .min_by(|(_, a), (_, b)| a.partial_cmp(&b).expect("PartialOrd distance from center"))
-                    .expect("min distance from center")
-                    .0
-            })
-            .collect::<Vec<usize>>()
+            .map(|(i, center)| (i, ((row - center) * (row - center)).sum()))
+            .map(|(i, x)| if x.is_nan() { (i, T::from(f32::MAX).expect("T::from(f32::MAX)")) } else { (i, x) })
+            .min_by(|(_, a), (_, b)| a.partial_cmp(&b).expect("PartialOrd distance from center"))
+            .expect("min distance from center")
+            .0
     }
 }
 
